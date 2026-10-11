@@ -1,5 +1,11 @@
 [
   {
+    "id": "C25",
+    "title": "Fix del \"error 1\" al entrar a algunos edificios",
+    "desc": "Algunos edificios con datos de habitación dañados hacían que apareciera el «error 1» (el contador rojo de errores) al entrar o acercarse, por un fallo al revisar los interruptores de luz de esa habitación. Ahora se maneja ese caso sin romper. El edificio sigue siendo jugable (como mucho, esa habitación puede no detectar sus interruptores).",
+    "date": "2026-10-11"
+  },
+  {
     "id": "C24",
     "title": "Registro de daño y muerte en el log (para soporte)",
     "desc": "El juego ahora anota en tu log (console.txt / DebugLog) cuándo recibís una herida nueva (mordida, rasguño, corte), cuándo te infectás y cuándo muere tu personaje, con la causa (qué te atacó, con qué arma) y el estado de tu cuerpo. Sirve para que podamos averiguar qué pasó cuando reportás un problema. No cambia nada del juego y solo registra cambios (no llena el log).",
