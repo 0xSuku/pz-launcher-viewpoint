@@ -1,5 +1,11 @@
 [
   {
+    "id": "C24",
+    "title": "Registro de daño y muerte en el log (para soporte)",
+    "desc": "El juego ahora anota en tu log (console.txt / DebugLog) cuándo recibís una herida nueva (mordida, rasguño, corte), cuándo te infectás y cuándo muere tu personaje, con la causa (qué te atacó, con qué arma) y el estado de tu cuerpo. Sirve para que podamos averiguar qué pasó cuando reportás un problema. No cambia nada del juego y solo registra cambios (no llena el log).",
+    "date": "2026-10-11"
+  },
+  {
     "id": "C23",
     "title": "La comida empieza a cocinarse al encender la estufa",
     "desc": "Antes, al prender la estufa la barra de cocinado quedaba un rato sin moverse (parecía que no arrancaba) hasta que la comida se calentaba. Ahora la cocción empieza apenas la estufa está caliente. No cocina más rápido: solo elimina esa demora inicial. El resultado final lo sigue decidiendo el servidor.",
