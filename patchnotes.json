@@ -1,5 +1,11 @@
 [
   {
+    "id": "C26",
+    "title": "Opción: menos consumo de RAM (distancia de carga)",
+    "desc": "Permite bajar un poco el ancho de mapa que tu cliente carga, para que el servidor tenga que cargar menos por vos y use menos memoria (ayuda a que el server vaya más fino con mucha gente). Se ve un poquito menos de distancia, pero completo: sin partes negras. Es opcional y se configura desde Ajustes de rendimiento (recomendado: 16). Si no lo activás, nada cambia.",
+    "date": "2026-10-12"
+  },
+  {
     "id": "C25",
     "title": "Fix del \"error 1\" al entrar a algunos edificios",
     "desc": "Algunos edificios con datos de habitación dañados hacían que apareciera el «error 1» (el contador rojo de errores) al entrar o acercarse, por un fallo al revisar los interruptores de luz de esa habitación. Ahora se maneja ese caso sin romper. El edificio sigue siendo jugable (como mucho, esa habitación puede no detectar sus interruptores).",
