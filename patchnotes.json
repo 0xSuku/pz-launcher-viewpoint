@@ -1,5 +1,11 @@
 [
   {
+    "id": "C27",
+    "title": "Nombre de la habilidad en español al subir de nivel",
+    "desc": "Al subir un nivel de una habilidad, el cartelito sobre tu personaje mostraba el nombre en inglés (porque lo arma el servidor). Ahora se muestra en tu idioma. Solo afecta habilidades base del juego.",
+    "date": "2026-10-12"
+  },
+  {
     "id": "C26",
     "title": "Opción: menos consumo de RAM (distancia de carga)",
     "desc": "Permite bajar un poco el ancho de mapa que tu cliente carga, para que el servidor tenga que cargar menos por vos y use menos memoria (ayuda a que el server vaya más fino con mucha gente). Se ve un poquito menos de distancia, pero completo: sin partes negras. Es opcional y se configura desde Ajustes de rendimiento (recomendado: 16). Si no lo activás, nada cambia.",
