@@ -3,6 +3,7 @@ export namespace main {
 	export class SettingsPayload {
 	    chunkBudgetMs: number;
 	    maxHeapMB: number;
+	    maxChunkGridWidth: number;
 	    safeTowOff: boolean;
 	    ramGB: number;
 	    suggestHeapMB: number;
@@ -18,6 +19,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.chunkBudgetMs = source["chunkBudgetMs"];
 	        this.maxHeapMB = source["maxHeapMB"];
+	        this.maxChunkGridWidth = source["maxChunkGridWidth"];
 	        this.safeTowOff = source["safeTowOff"];
 	        this.ramGB = source["ramGB"];
 	        this.suggestHeapMB = source["suggestHeapMB"];

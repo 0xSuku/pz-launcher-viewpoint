@@ -32,7 +32,7 @@ func TestSetVMArgs(t *testing.T) {
 
 	// chunk>0 reemplaza el flag previo (sin duplicar); heap=0 deja -Xmx intacto;
 	// safeTowOff=false NO escribe el flag (el jar usa su default = true).
-	got := setVMArgs(base, 4, 0, false)
+	got := setVMArgs(base, 4, 0, 0, false)
 	if countPrefix(got, chunkArgPrefix) != 1 || !contains(got, "-Dpz.chunkBudgetMs=4") {
 		t.Fatalf("chunk no quedó en 4 único: %v", got)
 	}
@@ -48,7 +48,7 @@ func TestSetVMArgs(t *testing.T) {
 
 	// chunk=0 quita el flag (vuelve a vanilla); heap>0 reemplaza -Xmx;
 	// safeTowOff=true escribe "-Dpz.safeTowReconnect=false" una sola vez.
-	got = setVMArgs(base, 0, 6144, true)
+	got = setVMArgs(base, 0, 6144, 0, true)
 	if countPrefix(got, chunkArgPrefix) != 0 {
 		t.Fatalf("chunk=0 debía quitar el flag: %v", got)
 	}
@@ -60,9 +60,20 @@ func TestSetVMArgs(t *testing.T) {
 	}
 
 	// safeTowOff vuelve a false -> se elimina el flag previo (no se arrastra).
-	got = setVMArgs(got, 0, 0, false)
+	got = setVMArgs(got, 0, 0, 0, false)
 	if countPrefix(got, safeTowArgPrefix) != 0 {
 		t.Fatalf("safeTowOff=false debía quitar el flag previo: %v", got)
+	}
+
+	// maxChunkGridWidth>=12 escribe el flag una sola vez (parche C26).
+	got = setVMArgs(base, 0, 0, 16, false)
+	if countPrefix(got, maxGridArgPrefix) != 1 || !contains(got, "-Dpz.maxChunkGridWidth=16") {
+		t.Fatalf("grid no quedó en 16 único: %v", got)
+	}
+	// < 12 (incluye 0) NO escribe el flag y quita el previo.
+	got = setVMArgs(got, 0, 0, 0, false)
+	if countPrefix(got, maxGridArgPrefix) != 0 {
+		t.Fatalf("grid<12 debía quitar el flag previo: %v", got)
 	}
 }
 
@@ -77,7 +88,7 @@ func TestApplyPreservesOtherKeys(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := Apply(dir, 5, 4096, true); err != nil {
+	if err := Apply(dir, 5, 4096, 0, true); err != nil {
 		t.Fatal(err)
 	}
 

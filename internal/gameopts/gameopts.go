@@ -32,6 +32,12 @@ const chunkArgPrefix = "-Dpz.chunkBudgetMs="
 // "-Dpz.safeTowReconnect=false" cuando el jugador decide desactivarlo.
 const safeTowArgPrefix = "-Dpz.safeTowReconnect="
 
+// maxGridArgPrefix es el flag gestionado del cap de ancho de grilla de chunks
+// (parche C26). Baja la RAM que el server carga por este jugador. El jar usa su
+// default (0 = vanilla) cuando el flag no está; solo lo escribimos si el jugador
+// eligió un tope (>= 12).
+const maxGridArgPrefix = "-Dpz.maxChunkGridWidth="
+
 // Path devuelve la ruta al ProjectZomboid64.json dentro de la carpeta del juego.
 func Path(gameDir string) string { return filepath.Join(gameDir, jsonName) }
 
@@ -42,9 +48,11 @@ func Path(gameDir string) string { return filepath.Join(gameDir, jsonName) }
 //     el -Xmx del juego como esté (no lo gestionamos).
 //   - safeTowOff == true -> fija "-Dpz.safeTowReconnect=false". false -> quita
 //     el flag (el jar usa su default, que es true = fix activado).
+//   - maxChunkGridWidth >= 12 -> fija "-Dpz.maxChunkGridWidth=N". 0 (o < 12) ->
+//     quita el flag (el jar usa su default, 0 = vanilla por resolución).
 //
 // Preserva el resto del fichero (mainClass, classpath y demás vmArgs).
-func Apply(gameDir string, chunkBudgetMs, maxHeapMB int, safeTowOff bool) error {
+func Apply(gameDir string, chunkBudgetMs, maxHeapMB, maxChunkGridWidth int, safeTowOff bool) error {
 	p := Path(gameDir)
 	data, err := os.ReadFile(p)
 	if err != nil {
@@ -66,7 +74,7 @@ func Apply(gameDir string, chunkBudgetMs, maxHeapMB int, safeTowOff bool) error 
 		}
 	}
 
-	args = setVMArgs(args, chunkBudgetMs, maxHeapMB, safeTowOff)
+	args = setVMArgs(args, chunkBudgetMs, maxHeapMB, maxChunkGridWidth, safeTowOff)
 
 	// Volcar de vuelta como []any para el marshaling.
 	out := make([]any, len(args))
@@ -86,8 +94,8 @@ func Apply(gameDir string, chunkBudgetMs, maxHeapMB int, safeTowOff bool) error 
 }
 
 // setVMArgs devuelve una copia de args con nuestras líneas gestionadas puestas al día.
-func setVMArgs(args []string, chunkBudgetMs, maxHeapMB int, safeTowOff bool) []string {
-	out := make([]string, 0, len(args)+3)
+func setVMArgs(args []string, chunkBudgetMs, maxHeapMB, maxChunkGridWidth int, safeTowOff bool) []string {
+	out := make([]string, 0, len(args)+4)
 	for _, a := range args {
 		t := strings.TrimSpace(a)
 		if strings.HasPrefix(t, chunkArgPrefix) {
@@ -95,6 +103,9 @@ func setVMArgs(args []string, chunkBudgetMs, maxHeapMB int, safeTowOff bool) []s
 		}
 		if strings.HasPrefix(t, safeTowArgPrefix) {
 			continue // idem: lo regeneramos abajo solo si el jugador lo desactivó
+		}
+		if strings.HasPrefix(t, maxGridArgPrefix) {
+			continue // idem: se re-añade abajo solo si el jugador fijó un tope
 		}
 		if maxHeapMB > 0 && strings.HasPrefix(t, "-Xmx") {
 			continue // reemplazamos el -Xmx solo si el jugador lo configuró
@@ -106,6 +117,9 @@ func setVMArgs(args []string, chunkBudgetMs, maxHeapMB int, safeTowOff bool) []s
 	}
 	if chunkBudgetMs > 0 {
 		out = append(out, fmt.Sprintf("%s%d", chunkArgPrefix, chunkBudgetMs))
+	}
+	if maxChunkGridWidth >= 12 {
+		out = append(out, fmt.Sprintf("%s%d", maxGridArgPrefix, maxChunkGridWidth))
 	}
 	if safeTowOff {
 		out = append(out, safeTowArgPrefix+"false")

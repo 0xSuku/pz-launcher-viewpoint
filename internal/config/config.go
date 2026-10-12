@@ -33,6 +33,14 @@ type Config struct {
 	// (dejar el valor del juego como esté).
 	MaxHeapMB int `json:"max_heap_mb,omitempty"`
 
+	// MaxChunkGridWidth capa el ancho de la grilla de chunks del cliente (parche
+	// C26). El cliente le pide al server exactamente este ancho, así que bajarlo
+	// reduce la RAM que el server carga por este jugador (y algo la del cliente),
+	// SIN los chunks negros que causaba capar del lado del server. 0 = sin tope
+	// (vanilla: el ancho lo decide la resolución). Se escribe como
+	// -Dpz.maxChunkGridWidth; el jar lo fuerza impar con piso 13. Rango 12..20.
+	MaxChunkGridWidth int `json:"max_chunk_grid_width,omitempty"`
+
 	// SafeTowReconnectOff desactiva el fix de reenganche de remolque sin tirón
 	// (parche C18). El jar viene con el fix ACTIVADO por defecto, así que el
 	// valor-cero (false) = fix activo y no escribimos nada en el json del juego.

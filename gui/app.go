@@ -73,9 +73,10 @@ type StatePayload struct {
 
 // SettingsPayload alimenta el formulario de "Ajustes de rendimiento".
 type SettingsPayload struct {
-	ChunkBudgetMs int  `json:"chunkBudgetMs"`
-	MaxHeapMB     int  `json:"maxHeapMB"`
-	SafeTowOff    bool `json:"safeTowOff"`
+	ChunkBudgetMs     int  `json:"chunkBudgetMs"`
+	MaxHeapMB         int  `json:"maxHeapMB"`
+	MaxChunkGridWidth int  `json:"maxChunkGridWidth"`
+	SafeTowOff        bool `json:"safeTowOff"`
 	RAMGB         int  `json:"ramGB"`
 	SuggestHeapMB int  `json:"suggestHeapMB"`
 	DefaultHeapMB int  `json:"defaultHeapMB"`
@@ -254,12 +255,13 @@ func (a *App) GetSettings() SettingsPayload {
 	cfg, gameDir := a.cfg, a.gameDir
 	a.mu.Unlock()
 	sp := SettingsPayload{
-		ChunkBudgetMs: cfg.ChunkBudgetMs,
-		MaxHeapMB:     cfg.MaxHeapMB,
-		SafeTowOff:    cfg.SafeTowReconnectOff,
-		RAMGB:         gameopts.TotalRAMGB(),
-		SuggestHeapMB: gameopts.SuggestHeapMB(),
-		Configured:    cfg.PerfConfigured,
+		ChunkBudgetMs:     cfg.ChunkBudgetMs,
+		MaxHeapMB:         cfg.MaxHeapMB,
+		MaxChunkGridWidth: cfg.MaxChunkGridWidth,
+		SafeTowOff:        cfg.SafeTowReconnectOff,
+		RAMGB:             gameopts.TotalRAMGB(),
+		SuggestHeapMB:     gameopts.SuggestHeapMB(),
+		Configured:        cfg.PerfConfigured,
 	}
 	sp.DefaultHeapMB = cfg.MaxHeapMB
 	if sp.DefaultHeapMB == 0 {
@@ -275,7 +277,7 @@ func (a *App) GetSettings() SettingsPayload {
 
 // SaveSettings valida, guarda en pzlauncher.json y aplica los ajustes al
 // ProjectZomboid64.json del juego. Devuelve un resumen legible.
-func (a *App) SaveSettings(chunkMs, heapMB int, towOff bool) (string, error) {
+func (a *App) SaveSettings(chunkMs, heapMB, gridWidth int, towOff bool) (string, error) {
 	a.mu.Lock()
 	gameDir, exeDir, cfg := a.gameDir, a.exeDir, a.cfg
 	a.mu.Unlock()
@@ -288,12 +290,13 @@ func (a *App) SaveSettings(chunkMs, heapMB int, towOff bool) (string, error) {
 
 	cfg.ChunkBudgetMs = clamp(chunkMs, 0, 50)
 	cfg.MaxHeapMB = clampHeap(heapMB)
+	cfg.MaxChunkGridWidth = clampGrid(gridWidth)
 	cfg.SafeTowReconnectOff = towOff
 	cfg.PerfConfigured = true
 	if err := config.Save(exeDir, cfg); err != nil {
 		return "", fmt.Errorf("No se pudo guardar la config: %w", err)
 	}
-	if err := gameopts.Apply(gameDir, cfg.ChunkBudgetMs, cfg.MaxHeapMB, cfg.SafeTowReconnectOff); err != nil {
+	if err := gameopts.Apply(gameDir, cfg.ChunkBudgetMs, cfg.MaxHeapMB, cfg.MaxChunkGridWidth, cfg.SafeTowReconnectOff); err != nil {
 		return "", fmt.Errorf("No se pudieron aplicar los ajustes: %w", err)
 	}
 	a.mu.Lock()
@@ -308,7 +311,7 @@ func (a *App) applyGameOpts(gameDir string, cfg config.Config) {
 	if gameDir == "" || !cfg.PerfConfigured {
 		return
 	}
-	if err := gameopts.Apply(gameDir, cfg.ChunkBudgetMs, cfg.MaxHeapMB, cfg.SafeTowReconnectOff); err != nil {
+	if err := gameopts.Apply(gameDir, cfg.ChunkBudgetMs, cfg.MaxHeapMB, cfg.MaxChunkGridWidth, cfg.SafeTowReconnectOff); err != nil {
 		log.Printf("[aviso] no se pudieron aplicar los ajustes de rendimiento: %v", err)
 	}
 }
@@ -326,9 +329,14 @@ func perfSummary(cfg config.Config) string {
 	if cfg.SafeTowReconnectOff {
 		tow = "desactivado (vanilla)"
 	}
+	grid := "sin tope (vanilla)"
+	if cfg.MaxChunkGridWidth >= 12 {
+		grid = fmt.Sprintf("%d", cfg.MaxChunkGridWidth)
+	}
 	return "Ajustes aplicados (al arrancar el juego):\n" +
 		"• Fix anti-tirones: " + chunk + "\n" +
 		"• Memoria (-Xmx): " + heap + "\n" +
+		"• Ancho de carga de mapa: " + grid + "\n" +
 		"• Fix de remolque: " + tow
 }
 
@@ -340,6 +348,15 @@ func clamp(v, lo, hi int) int {
 		return hi
 	}
 	return v
+}
+
+// clampGrid normaliza el ancho de grilla de chunks: 0 = sin tope (vanilla);
+// cualquier valor positivo se acota a [12,20] (el jar lo fuerza impar con piso 13).
+func clampGrid(v int) int {
+	if v <= 0 {
+		return 0
+	}
+	return clamp(v, 12, 20)
 }
 
 func clampHeap(v int) int {

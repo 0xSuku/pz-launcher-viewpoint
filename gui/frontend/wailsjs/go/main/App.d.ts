@@ -14,6 +14,6 @@ export function Play():Promise<void>;
 
 export function Quit():Promise<void>;
 
-export function SaveSettings(arg1:number,arg2:number,arg3:boolean):Promise<string>;
+export function SaveSettings(arg1:number,arg2:number,arg3:number,arg4:boolean):Promise<string>;
 
 export function Start():Promise<void>;

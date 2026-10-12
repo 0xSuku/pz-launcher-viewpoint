@@ -110,6 +110,7 @@ async function openSettings() {
     const s = await App().GetSettings();
     $("f-chunk").value = s.chunkBudgetMs || 0;
     $("f-heap").value = s.defaultHeapMB || 0;
+    $("f-grid").value = s.maxChunkGridWidth || 0;
     $("f-tow").checked = !!s.safeTowOff;
     const ramLine = s.ramGB > 0 ? `Tu PC tiene ${s.ramGB} GB de RAM.` : "No pude detectar tu RAM.";
     const sug = s.suggestHeapMB > 0 ? ` Sugerido: ${s.suggestHeapMB} MB.` : "";
@@ -126,9 +127,10 @@ async function openSettings() {
 async function saveSettings() {
   const chunk = parseInt($("f-chunk").value || "0", 10);
   const heap = parseInt($("f-heap").value || "0", 10);
+  const grid = parseInt($("f-grid").value || "0", 10);
   const towOff = $("f-tow").checked;
   try {
-    const summary = await App().SaveSettings(chunk, heap, towOff);
+    const summary = await App().SaveSettings(chunk, heap, grid, towOff);
     toast(summary, "ok");
     backToMenu();
   } catch (e) {

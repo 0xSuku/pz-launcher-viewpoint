@@ -319,7 +319,7 @@ func applyGameOpts(gameDir string, cfg config.Config) {
 	if gameDir == "" || !cfg.PerfConfigured {
 		return
 	}
-	if err := gameopts.Apply(gameDir, cfg.ChunkBudgetMs, cfg.MaxHeapMB, cfg.SafeTowReconnectOff); err != nil {
+	if err := gameopts.Apply(gameDir, cfg.ChunkBudgetMs, cfg.MaxHeapMB, cfg.MaxChunkGridWidth, cfg.SafeTowReconnectOff); err != nil {
 		log.Printf("[aviso] no se pudieron aplicar los ajustes de rendimiento: %v", err)
 	}
 }
@@ -372,7 +372,20 @@ func configurePerf(exeDir, gameDir string, cfg *config.Config) {
 		cfg.MaxHeapMB = clampHeap(parseIntOr(s, cfg.MaxHeapMB))
 	}
 
-	// 3) Fix de reenganche de remolque (parche C18). Viene activado; esto es un
+	// 3) Ancho de carga de mapa (cap de grilla de chunks, parche C26). Baja la RAM
+	// que el server carga por este jugador (el cliente le pide exactamente este
+	// ancho). Sin chunks negros, a costa de un poco menos de distancia de visión.
+	gridHelp := "Ancho de carga de mapa (ahorro de RAM del servidor)\n\n" +
+		"Baja cuánto mapa carga tu cliente. Como el servidor carga por vos " +
+		"exactamente lo que pedís, bajarlo le ahorra memoria al servidor (y algo " +
+		"a vos).\n\n" +
+		"Se ve un poco menos de distancia, pero completo (sin partes negras).\n" +
+		"Recomendado: 16.   0 (o vacío) = sin tope (vanilla). Rango 12-20."
+	if s, ok := ui.AskNumber(gridHelp, "Ancho de carga de mapa (0 = sin tope):", strconv.Itoa(cfg.MaxChunkGridWidth)); ok {
+		cfg.MaxChunkGridWidth = clampGrid(parseIntOr(s, cfg.MaxChunkGridWidth))
+	}
+
+	// 4) Fix de reenganche de remolque (parche C18). Viene activado; esto es un
 	// interruptor para volver a vanilla si hiciera falta diagnosticar.
 	towHelp := "Fix de remolque (anti-choque al reenganchar)\n\n" +
 		"Evita que un auto que remolca un trailer u otro auto se re-enganche de " +
@@ -385,7 +398,7 @@ func configurePerf(exeDir, gameDir string, cfg *config.Config) {
 	cfg.PerfConfigured = true
 	_ = config.Save(exeDir, *cfg)
 
-	if err := gameopts.Apply(gameDir, cfg.ChunkBudgetMs, cfg.MaxHeapMB, cfg.SafeTowReconnectOff); err != nil {
+	if err := gameopts.Apply(gameDir, cfg.ChunkBudgetMs, cfg.MaxHeapMB, cfg.MaxChunkGridWidth, cfg.SafeTowReconnectOff); err != nil {
 		ui.ShowError("No se pudieron aplicar los ajustes: " + err.Error())
 		return
 	}
@@ -406,9 +419,14 @@ func perfSummary(cfg config.Config) string {
 	if cfg.SafeTowReconnectOff {
 		tow = "desactivado (vanilla)"
 	}
+	grid := "sin tope (vanilla)"
+	if cfg.MaxChunkGridWidth >= 12 {
+		grid = fmt.Sprintf("%d", cfg.MaxChunkGridWidth)
+	}
 	return "Ajustes aplicados (al arrancar el juego):\n" +
 		"• Fix anti-tirones: " + chunk + "\n" +
 		"• Memoria (-Xmx): " + heap + "\n" +
+		"• Ancho de carga de mapa: " + grid + "\n" +
 		"• Fix de remolque: " + tow
 }
 
@@ -441,6 +459,15 @@ func clampHeap(v int) int {
 		return 0
 	}
 	return clamp(v, 1536, 32768)
+}
+
+// clampGrid normaliza el ancho de grilla de chunks: 0 = sin tope (vanilla);
+// cualquier valor positivo se acota a [12,20] (el jar lo fuerza impar, piso 13).
+func clampGrid(v int) int {
+	if v <= 0 {
+		return 0
+	}
+	return clamp(v, 12, 20)
 }
 
 // offlineManifest da el mínimo para poder lanzar el juego sin conexión.

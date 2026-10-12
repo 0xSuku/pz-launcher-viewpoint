@@ -26,8 +26,8 @@ export function Quit() {
   return window['go']['main']['App']['Quit']();
 }
 
-export function SaveSettings(arg1, arg2, arg3) {
-  return window['go']['main']['App']['SaveSettings'](arg1, arg2, arg3);
+export function SaveSettings(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['SaveSettings'](arg1, arg2, arg3, arg4);
 }
 
 export function Start() {

@@ -94,6 +94,11 @@
           <span class="field-help" id="ram-help"></span>
           <input type="number" id="f-heap" min="0" max="32768" step="256" />
         </label>
+        <label class="field">
+          <span class="field-label">Ancho de carga de mapa</span>
+          <span class="field-help">Baja cuánto mapa carga tu cliente para que el servidor use menos RAM. Se ve un poco menos de distancia, pero completo (sin partes negras). Recomendado: 16. 0 = sin tope (vanilla). Rango 12-20.</span>
+          <input type="number" id="f-grid" min="0" max="20" />
+        </label>
         <label class="field field-check">
           <input type="checkbox" id="f-tow" />
           <span>
