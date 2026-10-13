@@ -46,6 +46,10 @@ export function Start() {
   return window['go']['main']['App']['Start']();
 }
 
+export function UninstallZombieBuddy() {
+  return window['go']['main']['App']['UninstallZombieBuddy']();
+}
+
 export function UpdateZombieBuddy() {
   return window['go']['main']['App']['UpdateZombieBuddy']();
 }

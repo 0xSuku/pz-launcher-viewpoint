@@ -21,7 +21,8 @@ launcher original.
    funcionando. Dentro del juego, la tecla **Supr** abre los ajustes de Viewpoint.
 
 Para dejar de usarlo, destildá la opción y dale **Guardar**: el juego vuelve a
-arrancar como siempre. El launcher nunca toca tus partidas ni tus opciones de
+arrancar como siempre. Para sacar ZombieBuddy del todo (aunque lo hayas instalado
+con su instalador o a mano), usá **Desinstalar ZombieBuddy** en el mismo panel. El launcher nunca toca tus partidas ni tus opciones de
 Steam.
 
 ## Cómo comprobar que el archivo es el original

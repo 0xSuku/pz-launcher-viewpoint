@@ -234,6 +234,36 @@ type Status struct {
 	// ModsActive: ZombieBuddy y Viewpoint están activos en el menú principal
 	// (Zomboid\mods\default.txt). Si no, el launcher los activa al Jugar.
 	ModsActive bool `json:"modsActive"`
+	// ZombieBuddyPresent: queda algo de ZombieBuddy en esta PC que el botón
+	// "Desinstalar ZombieBuddy" puede quitar (ficheros en el juego, la línea del
+	// agente en el json o el mod activo en el menú).
+	ZombieBuddyPresent bool `json:"zombieBuddyPresent"`
+	// SteamOptionsAgent: ZombieBuddy está en las Opciones de lanzamiento de
+	// Steam. Eso no lo editamos (Steam pisa ese fichero mientras está abierto):
+	// se le indica al jugador que lo borre él.
+	SteamOptionsAgent bool `json:"steamOptionsAgent"`
+}
+
+// AgentFilesPresent indica si queda algún fichero de ZombieBuddy en el juego.
+func AgentFilesPresent(gameDir string) bool {
+	for _, f := range append(agentFiles, pendingJar) {
+		if isFile(filepath.Join(gameDir, f)) {
+			return true
+		}
+	}
+	return false
+}
+
+// RemoveAgentFiles borra zbNative.dll, ZombieBuddy.jar y ZombieBuddy.jar.new de
+// la carpeta del juego. Con el juego abierto Windows no deja borrarlos.
+func RemoveAgentFiles(gameDir string) error {
+	for _, f := range append(agentFiles, pendingJar) {
+		err := os.Remove(filepath.Join(gameDir, f))
+		if err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("no se pudo borrar %s (¿el juego está abierto?): %w", f, err)
+		}
+	}
+	return nil
 }
 
 // ModsActiveIn indica si todos los ModIDs están activos en default.txt.
@@ -268,8 +298,9 @@ func GetStatus(gameDir string, enabled, autoUpdate, jsonAgentNotOurs bool) Statu
 		ZombieBuddySubscribed: subscribed,
 		ViewpointSubscribed:   ViewpointSubscribed(),
 		Agent:                 NoSource,
-		InstalledExternally:   jsonAgentNotOurs || SteamOptionsLoadAgent(),
+		SteamOptionsAgent:     SteamOptionsLoadAgent(),
 	}
+	st.InstalledExternally = jsonAgentNotOurs || st.SteamOptionsAgent
 	if subscribed {
 		st.AvailableVersion = JarVersion(filepath.Join(libs, jar))
 	}

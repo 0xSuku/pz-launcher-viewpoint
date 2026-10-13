@@ -25,4 +25,6 @@ export function SaveViewpoint(arg1:boolean,arg2:boolean):Promise<viewpoint.Statu
 
 export function Start():Promise<void>;
 
+export function UninstallZombieBuddy():Promise<main.UninstallResult>;
+
 export function UpdateZombieBuddy():Promise<viewpoint.Status>;

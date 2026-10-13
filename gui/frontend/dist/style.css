@@ -144,6 +144,10 @@ html, body {
 .vp-links .btn { flex-direction: row; padding: 8px 12px; font-size: 13px; }
 .vp-links:not(:has(.btn:not(.hidden))) { display: none; }
 
+.vp-danger { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--border); padding-top: 12px; }
+.btn-danger { flex-direction: row; align-self: flex-start; padding: 8px 12px; font-size: 13px; border-color: var(--danger); color: #f0b4ad; }
+.btn-danger:hover { background: rgba(192,86,75,.14); border-color: var(--danger); }
+
 /* Toast */
 .toast {
   position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);

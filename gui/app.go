@@ -322,8 +322,88 @@ func (a *App) GetViewpoint() viewpoint.Status {
 	}
 	st := viewpoint.GetStatus(gameDir, cfg.Viewpoint, !cfg.ViewpointManualUpdates,
 		gameDir != "" && gameopts.HasAgent(gameDir) && !cfg.ViewpointAgentOwned)
-	st.ModsActive = viewpoint.ModsActiveIn(zomboid.Resolve(cfg.ZomboidDir))
+	zdir := zomboid.Resolve(cfg.ZomboidDir)
+	st.ModsActive = viewpoint.ModsActiveIn(zdir)
+	st.ZombieBuddyPresent = zombieBuddyModActive(zdir) ||
+		(gameDir != "" && (viewpoint.AgentFilesPresent(gameDir) || gameopts.HasAgent(gameDir)))
 	return st
+}
+
+func zombieBuddyModActive(zomboidDir string) bool {
+	data, err := os.ReadFile(viewpoint.DefaultModsFile(zomboidDir))
+	return err == nil && slices.Contains(viewpoint.ActiveMods(string(data)), "ZombieBuddy")
+}
+
+// UninstallResult es la respuesta de UninstallZombieBuddy: el estado nuevo y un
+// resumen para mostrar (incluye qué falta hacer a mano, si algo).
+type UninstallResult struct {
+	Status  viewpoint.Status `json:"status"`
+	Message string           `json:"message"`
+}
+
+// UninstallZombieBuddy quita ZombieBuddy de esta PC, venga de donde venga (este
+// launcher, su instalador oficial o a mano): apaga Viewpoint, saca el agente del
+// json del juego, desactiva ZombieBuddy y Viewpoint en el menú de mods y borra
+// sus ficheros de la carpeta del juego. Las Opciones de lanzamiento de Steam no
+// se editan (Steam pisa ese fichero mientras está abierto): si ZombieBuddy está
+// ahí, se le dice al jugador qué borrar. La suscripción de Workshop y las
+// aprobaciones de ZombieBuddy (%UserProfile%\.zombie_buddy) no se tocan.
+func (a *App) UninstallZombieBuddy() (UninstallResult, error) {
+	answer, err := wruntime.MessageDialog(a.ctx, wruntime.MessageDialogOptions{
+		Type:  wruntime.QuestionDialog,
+		Title: "Desinstalar ZombieBuddy",
+		Message: "Se desactiva Viewpoint y se borran zbNative.dll y ZombieBuddy.jar " +
+			"de la carpeta del juego. Cerrá el juego antes.\n\n¿Desinstalar ZombieBuddy?",
+	})
+	if err != nil || answer != "Yes" {
+		return UninstallResult{Status: a.GetViewpoint()}, nil // cancelado
+	}
+
+	a.mu.Lock()
+	gameDir, exeDir := a.gameDir, a.exeDir
+	a.cfg.Viewpoint = false
+	a.cfg.ViewpointAgentOwned = false
+	a.cfg.ViewpointAddedMods = nil
+	cfg := a.cfg
+	a.mu.Unlock()
+	if err := config.Save(exeDir, cfg); err != nil {
+		log.Printf("[aviso] no se pudo guardar la config: %v", err)
+	}
+
+	var done []string
+	if gameDir != "" && gameopts.HasAgent(gameDir) {
+		if err := gameopts.SetAgent(gameDir, false); err != nil {
+			return UninstallResult{a.GetViewpoint(), ""}, fmt.Errorf("No se pudo sacar ZombieBuddy de ProjectZomboid64.json: %w", err)
+		}
+		done = append(done, "Quitado de ProjectZomboid64.json.")
+	}
+	zdir := zomboid.Resolve(cfg.ZomboidDir)
+	if zombieBuddyModActive(zdir) || viewpoint.ModsActiveIn(zdir) {
+		if err := viewpoint.DisableMods(zdir, viewpoint.ModIDs); err != nil {
+			return UninstallResult{a.GetViewpoint(), ""}, fmt.Errorf("No se pudieron desactivar los mods: %w", err)
+		}
+		done = append(done, "ZombieBuddy y Viewpoint desactivados en el menú de mods.")
+	}
+	if gameDir != "" && viewpoint.AgentFilesPresent(gameDir) {
+		if err := viewpoint.RemoveAgentFiles(gameDir); err != nil {
+			return UninstallResult{a.GetViewpoint(), ""}, err
+		}
+		done = append(done, "Borrados zbNative.dll y ZombieBuddy.jar de la carpeta del juego.")
+	}
+
+	msg := "ZombieBuddy desinstalado."
+	if len(done) == 0 {
+		msg = "No había nada de ZombieBuddy que quitar en el juego."
+	}
+	for _, d := range done {
+		msg += "\n• " + d
+	}
+	if viewpoint.SteamOptionsLoadAgent() {
+		msg += "\n\nFalta un paso a mano: en Steam, clic derecho en Project Zomboid → " +
+			"Propiedades → Opciones de lanzamiento, y borrá \"-agentlib:zbNative\" " +
+			"(y el \"--\" que lo acompaña, si no lo usás para otra cosa)."
+	}
+	return UninstallResult{a.GetViewpoint(), msg}, nil
 }
 
 // SaveViewpoint guarda los dos checks. Se aplican al Jugar (igual que los

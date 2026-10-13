@@ -33,12 +33,12 @@ function backToMenu() {
 }
 
 let toastTimer = null;
-function toast(msg, kind) {
+function toast(msg, kind, ms) {
   const t = $("toast");
   t.textContent = msg;
   t.className = "toast" + (kind ? " " + kind : "");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.add("hidden"), 4200);
+  toastTimer = setTimeout(() => t.classList.add("hidden"), ms || 4200);
 }
 
 // --- Render del estado ---
@@ -200,6 +200,11 @@ function renderViewpoint(s) {
       : line(["ZombieBuddy y Viewpoint se activan en el menú de mods al jugar."]));
   }
 
+  if (s.steamOptionsAgent) {
+    box.appendChild(line([["ZombieBuddy está en tus Opciones de lanzamiento de Steam: eso solo se quita desde Steam (Propiedades → Opciones de lanzamiento).", "warn"]]));
+  }
+  $("vp-danger").classList.toggle("hidden", !s.zombieBuddyPresent && !s.steamOptionsAgent);
+
   $("btn-vp-update").textContent = s.agent === "notInstalled" ? "Instalar ahora" : "Actualizar ahora";
   $("btn-vp-update").classList.toggle("hidden", !canUpdate || !s.gameFound || s.installedExternally);
   $("btn-vp-sub-zb").classList.toggle("hidden", !!s.zombieBuddySubscribed);
@@ -232,6 +237,17 @@ async function saveViewpoint() {
     backToMenu();
   } catch (e) {
     toast(String(e), "err");
+  }
+}
+
+async function uninstallZombieBuddy() {
+  try {
+    const r = await App().UninstallZombieBuddy();
+    renderViewpoint(r.status);
+    refreshViewpointButton();
+    if (r.message) toast(r.message, "ok", 12000); // vacío = el jugador canceló
+  } catch (e) {
+    toast(String(e), "err", 8000);
   }
 }
 
@@ -277,6 +293,9 @@ async function handleAction(act) {
       break;
     case "vp-update":
       updateZombieBuddy();
+      break;
+    case "vp-uninstall":
+      uninstallZombieBuddy();
       break;
     case "vp-sub-zb":
       App().OpenWorkshop("zombiebuddy");

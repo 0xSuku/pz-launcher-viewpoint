@@ -185,3 +185,31 @@ func TestEnableDisableModsOnDisk(t *testing.T) {
 		t.Fatalf("no volvió al original:\n%s", data)
 	}
 }
+
+func TestRemoveAgentFiles(t *testing.T) {
+	game, item := t.TempDir(), t.TempDir()
+	if AgentFilesPresent(game) {
+		t.Fatal("carpeta vacía con ZombieBuddy")
+	}
+	if err := Install(game, fakeItem(t, item, "1.0.0")); err != nil {
+		t.Fatal(err)
+	}
+	os.WriteFile(filepath.Join(game, pendingJar), []byte("x"), 0o644)
+	os.WriteFile(filepath.Join(game, "projectzomboid.jar"), []byte("juego"), 0o644)
+	if !AgentFilesPresent(game) {
+		t.Fatal("no detectó los ficheros instalados")
+	}
+	if err := RemoveAgentFiles(game); err != nil {
+		t.Fatal(err)
+	}
+	if AgentFilesPresent(game) {
+		t.Fatal("quedaron ficheros de ZombieBuddy")
+	}
+	if _, err := os.Stat(filepath.Join(game, "projectzomboid.jar")); err != nil {
+		t.Fatal("borró algo que no era de ZombieBuddy")
+	}
+	// Sin nada que borrar no es un error.
+	if err := RemoveAgentFiles(game); err != nil {
+		t.Fatal(err)
+	}
+}
