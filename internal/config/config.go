@@ -61,6 +61,11 @@ type Config struct {
 	// juego la puso el launcher. Solo así la quitamos al desactivar Viewpoint: si
 	// la puso el instalador oficial de ZombieBuddy, no es nuestra.
 	ViewpointAgentOwned bool `json:"viewpoint_agent_owned,omitempty"`
+
+	// ViewpointAddedMods son los mods (ZombieBuddy/Viewpoint) que el launcher
+	// activó en Zomboid\mods\default.txt. Al desactivar Viewpoint se quitan solo
+	// esos: si el jugador ya los tenía activos a mano, no los tocamos.
+	ViewpointAddedMods []string `json:"viewpoint_added_mods,omitempty"`
 }
 
 func file(baseDir string) string {

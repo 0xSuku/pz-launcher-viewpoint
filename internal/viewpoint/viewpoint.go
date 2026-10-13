@@ -231,6 +231,30 @@ type Status struct {
 	// ZombieBuddy ya se carga siempre por fuera del launcher (Opciones de Steam
 	// o un ProjectZomboid64.json que no editamos nosotros): no lo podemos apagar.
 	InstalledExternally bool `json:"installedExternally"`
+	// ModsActive: ZombieBuddy y Viewpoint están activos en el menú principal
+	// (Zomboid\mods\default.txt). Si no, el launcher los activa al Jugar.
+	ModsActive bool `json:"modsActive"`
+}
+
+// ModsActiveIn indica si todos los ModIDs están activos en default.txt.
+func ModsActiveIn(zomboidDir string) bool {
+	data, err := os.ReadFile(DefaultModsFile(zomboidDir))
+	if err != nil {
+		return false
+	}
+	active := ActiveMods(string(data))
+	for _, id := range ModIDs {
+		found := false
+		for _, a := range active {
+			if a == id {
+				found = true
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
 
 // GetStatus arma el estado. gameDir puede ser "" si no se encontró el juego.

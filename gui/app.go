@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"slices"
 	"sync"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -319,8 +320,10 @@ func (a *App) GetViewpoint() viewpoint.Status {
 	if runtime.GOOS != "windows" {
 		return viewpoint.Status{} // zbNative.dll es solo Windows
 	}
-	return viewpoint.GetStatus(gameDir, cfg.Viewpoint, !cfg.ViewpointManualUpdates,
+	st := viewpoint.GetStatus(gameDir, cfg.Viewpoint, !cfg.ViewpointManualUpdates,
 		gameDir != "" && gameopts.HasAgent(gameDir) && !cfg.ViewpointAgentOwned)
+	st.ModsActive = viewpoint.ModsActiveIn(zomboid.Resolve(cfg.ZomboidDir))
+	return st
 }
 
 // SaveViewpoint guarda los dos checks. Se aplican al Jugar (igual que los
@@ -366,10 +369,14 @@ func (a *App) OpenWorkshop(which string) {
 	wruntime.BrowserOpenURL(a.ctx, viewpoint.WorkshopURL(id))
 }
 
-// applyViewpoint deja el json del juego y los ficheros de ZombieBuddy según el
-// check: activado -> instala/actualiza ZombieBuddy y pone el agente; apagado ->
-// quita el agente si lo habíamos puesto nosotros. Si ZombieBuddy ya se carga
-// por fuera (Opciones de Steam o su instalador oficial) no tocamos nada.
+// applyViewpoint deja el juego listo según el check:
+//   - activado -> instala/actualiza ZombieBuddy, pone el agente en el json del
+//     juego y activa ZombieBuddy + Viewpoint en la lista de mods del menú
+//     principal (ver viewpoint.ModIDs para por qué eso alcanza en multijugador).
+//   - apagado -> deshace solo lo que hizo el launcher.
+//
+// Si ZombieBuddy ya se carga por fuera (Opciones de Steam o su instalador
+// oficial) no tocamos el agente, pero los mods sí hacen falta igual.
 func (a *App) applyViewpoint(gameDir string) error {
 	if runtime.GOOS != "windows" {
 		return nil
@@ -386,10 +393,9 @@ func (a *App) applyViewpoint(gameDir string) error {
 
 	hasAgent := gameopts.HasAgent(gameDir)
 	owned := cfg.ViewpointAgentOwned
-	if cfg.Viewpoint {
-		if (hasAgent && !owned) || viewpoint.SteamOptionsLoadAgent() {
-			return nil // ya lo carga otro: no duplicar
-		}
+	external := (hasAgent && !owned) || viewpoint.SteamOptionsLoadAgent()
+	switch {
+	case cfg.Viewpoint && !external:
 		if err := viewpoint.Ensure(gameDir, !cfg.ViewpointManualUpdates); err != nil {
 			return err
 		}
@@ -399,26 +405,59 @@ func (a *App) applyViewpoint(gameDir string) error {
 			}
 		}
 		owned = true
-	} else if hasAgent && owned {
+	case !cfg.Viewpoint && hasAgent && owned:
 		if err := gameopts.SetAgent(gameDir, false); err != nil {
 			return fmt.Errorf("No se pudo desactivar ZombieBuddy: %w", err)
 		}
 		owned = false
-	} else if !hasAgent {
+	case !hasAgent:
 		owned = false // Steam reescribió el json (update / verificar integridad)
 	}
 
-	if owned != cfg.ViewpointAgentOwned {
+	addedMods, modsErr := a.applyViewpointMods(cfg)
+
+	if owned != cfg.ViewpointAgentOwned || !sameStrings(addedMods, cfg.ViewpointAddedMods) {
 		a.mu.Lock()
 		a.cfg.ViewpointAgentOwned = owned
+		a.cfg.ViewpointAddedMods = addedMods
 		cfg = a.cfg
 		a.mu.Unlock()
 		if err := config.Save(exeDir, cfg); err != nil {
 			log.Printf("[aviso] no se pudo guardar la config: %v", err)
 		}
 	}
-	return nil
+	return modsErr
 }
+
+// applyViewpointMods activa (o, al desactivar, quita) ZombieBuddy y Viewpoint
+// en Zomboid\mods\default.txt. Devuelve la lista actualizada de mods que puso
+// el launcher, para guardarla en la config.
+func (a *App) applyViewpointMods(cfg config.Config) ([]string, error) {
+	dir := zomboid.Resolve(cfg.ZomboidDir)
+	if cfg.Viewpoint {
+		added, err := viewpoint.EnableMods(dir)
+		if err != nil {
+			return cfg.ViewpointAddedMods, fmt.Errorf("No se pudieron activar los mods en %s: %w", viewpoint.DefaultModsFile(dir), err)
+		}
+		return mergeStrings(cfg.ViewpointAddedMods, added), nil
+	}
+	if err := viewpoint.DisableMods(dir, cfg.ViewpointAddedMods); err != nil {
+		return cfg.ViewpointAddedMods, fmt.Errorf("No se pudieron desactivar los mods en %s: %w", viewpoint.DefaultModsFile(dir), err)
+	}
+	return nil, nil
+}
+
+func mergeStrings(a, b []string) []string {
+	out := append([]string(nil), a...)
+	for _, s := range b {
+		if !slices.Contains(out, s) {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func sameStrings(a, b []string) bool { return slices.Equal(a, b) }
 
 // --- Helpers (portados de cmd/launcher) ---
 

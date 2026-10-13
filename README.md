@@ -51,8 +51,11 @@ them):
 Subscribe to both; there is no need to run ZombieBuddy's installer. When enabled,
 on Play the launcher copies `zbNative.dll` + `ZombieBuddy.jar` from your Workshop
 download into the game folder (updating them when Steam gets a new version,
-unless you turn that off) and adds `-agentlib:zbNative` to `ProjectZomboid64.json`.
-Turning it off removes that line again (only if the launcher added it). Your Steam
+unless you turn that off) adds `-agentlib:zbNative` to `ProjectZomboid64.json`, and enables ZombieBuddy +
+Viewpoint in the main-menu mod list (`Zomboid\mods\default.txt`). That is enough
+for multiplayer even if the server doesn't list them: ZombieBuddy applies Java
+mods in memory at startup and keeps them until the game closes, and Viewpoint's
+camera is all Java. Turning it off undoes only what the launcher added. Your Steam
 Launch Options are never touched. ZombieBuddy asks you once to approve the
 Viewpoint jar (and again whenever Viewpoint updates).
 
@@ -138,8 +141,11 @@ Hay que suscribirse a los dos; no hace falta correr el instalador de ZombieBuddy
 Activado, al Jugar el launcher copia `zbNative.dll` + `ZombieBuddy.jar` desde tu
 descarga de Workshop a la carpeta del juego (y los actualiza cuando Steam baja una
 versión nueva, salvo que lo desactives) y añade `-agentlib:zbNative` al
-`ProjectZomboid64.json`. Al desactivarlo se quita esa línea (solo si la puso el
-launcher). Nunca toca tus Opciones de lanzamiento de Steam. ZombieBuddy pide una
+`ProjectZomboid64.json`, y activa ZombieBuddy + Viewpoint en la lista de mods del
+menú principal (`Zomboid\mods\default.txt`). Eso alcanza para multijugador aunque
+el servidor no los tenga en su lista: ZombieBuddy aplica los mods Java en memoria
+al arrancar y no los deshace hasta cerrar el juego, y la cámara de Viewpoint es
+toda Java. Al desactivarlo se deshace solo lo que agregó el launcher. Nunca toca tus Opciones de lanzamiento de Steam. ZombieBuddy pide una
 vez aprobar el jar de Viewpoint (y de nuevo cuando Viewpoint se actualiza).
 
 Las descargas toleran conexiones inestables: si la transferencia se queda parada,

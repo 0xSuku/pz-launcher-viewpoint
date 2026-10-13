@@ -194,6 +194,11 @@ function renderViewpoint(s) {
   box.appendChild(s.viewpointSubscribed
     ? line([["✓ ", "ok"], "Viewpoint descargado de Workshop."])
     : line([["Viewpoint no está descargado: suscribite en Workshop.", "bad"]]));
+  if (s.zombieBuddySubscribed && s.viewpointSubscribed) {
+    box.appendChild(s.modsActive
+      ? line([["✓ ", "ok"], "ZombieBuddy y Viewpoint activos en el menú de mods."])
+      : line(["ZombieBuddy y Viewpoint se activan en el menú de mods al jugar."]));
+  }
 
   $("btn-vp-update").textContent = s.agent === "notInstalled" ? "Instalar ahora" : "Actualizar ahora";
   $("btn-vp-update").classList.toggle("hidden", !canUpdate || !s.gameFound || s.installedExternally);

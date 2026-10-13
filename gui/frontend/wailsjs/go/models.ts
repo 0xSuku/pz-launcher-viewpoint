@@ -109,6 +109,7 @@ export namespace viewpoint {
 	    installedVersion: string;
 	    availableVersion: string;
 	    installedExternally: boolean;
+	    modsActive: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Status(source);
@@ -126,6 +127,7 @@ export namespace viewpoint {
 	        this.installedVersion = source["installedVersion"];
 	        this.availableVersion = source["availableVersion"];
 	        this.installedExternally = source["installedExternally"];
+	        this.modsActive = source["modsActive"];
 	    }
 	}
 
