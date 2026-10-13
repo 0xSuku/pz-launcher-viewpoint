@@ -96,3 +96,38 @@ export namespace manifest {
 
 }
 
+export namespace viewpoint {
+	
+	export class Status {
+	    supported: boolean;
+	    enabled: boolean;
+	    autoUpdate: boolean;
+	    gameFound: boolean;
+	    zombieBuddySubscribed: boolean;
+	    viewpointSubscribed: boolean;
+	    agent: string;
+	    installedVersion: string;
+	    availableVersion: string;
+	    installedExternally: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Status(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.supported = source["supported"];
+	        this.enabled = source["enabled"];
+	        this.autoUpdate = source["autoUpdate"];
+	        this.gameFound = source["gameFound"];
+	        this.zombieBuddySubscribed = source["zombieBuddySubscribed"];
+	        this.viewpointSubscribed = source["viewpointSubscribed"];
+	        this.agent = source["agent"];
+	        this.installedVersion = source["installedVersion"];
+	        this.availableVersion = source["availableVersion"];
+	        this.installedExternally = source["installedExternally"];
+	    }
+	}
+
+}
+

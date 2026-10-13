@@ -15,17 +15,20 @@ function show(view) {
   // Al cambiar de vista, cierra los paneles.
   $("panel-notes").classList.add("hidden");
   $("panel-settings").classList.add("hidden");
+  $("panel-viewpoint").classList.add("hidden");
 }
 
 function panel(id) {
   $("view-menu").classList.add("hidden");
   $("panel-notes").classList.toggle("hidden", id !== "panel-notes");
   $("panel-settings").classList.toggle("hidden", id !== "panel-settings");
+  $("panel-viewpoint").classList.toggle("hidden", id !== "panel-viewpoint");
 }
 
 function backToMenu() {
   $("panel-notes").classList.add("hidden");
   $("panel-settings").classList.add("hidden");
+  $("panel-viewpoint").classList.add("hidden");
   $("view-menu").classList.remove("hidden");
 }
 
@@ -66,6 +69,7 @@ function renderState(st) {
   renderNotes(notes);
 
   show("view-menu");
+  refreshViewpointButton();
 }
 
 function renderNotes(notes) {
@@ -138,6 +142,103 @@ async function saveSettings() {
   }
 }
 
+// --- Viewpoint (ver internal/viewpoint) ---
+
+// line arma una línea de estado con nodos DOM (las versiones salen de ficheros
+// en disco, así que nada de innerHTML). parts: textos o [texto, clase|"b"].
+function line(parts) {
+  const div = document.createElement("div");
+  for (const p of parts) {
+    if (!Array.isArray(p)) { div.appendChild(document.createTextNode(p)); continue; }
+    const el = document.createElement(p[1] === "b" ? "b" : "span");
+    el.textContent = p[0];
+    if (p[1] !== "b") el.className = p[1];
+    div.appendChild(el);
+  }
+  return div;
+}
+
+const ver = (v) => (v ? "v" + v : "?");
+
+function renderViewpoint(s) {
+  $("vp-enabled").checked = !!s.enabled;
+  $("vp-auto").checked = !!s.autoUpdate;
+  const box = $("vp-status");
+  box.innerHTML = "";
+  let canUpdate = false;
+
+  if (s.installedExternally) {
+    box.appendChild(line([["ZombieBuddy ya se carga siempre por fuera del launcher (sus opciones de Steam o su instalador oficial). Funciona igual, pero desmarcar esto no lo apaga.", "warn"]]));
+  } else {
+    switch (s.agent) {
+      case "noSource":
+        box.appendChild(line([["Falta ZombieBuddy: suscribite en Workshop y esperá a que Steam lo baje.", "bad"]]));
+        break;
+      case "notInstalled":
+        box.appendChild(line(["ZombieBuddy ", [ver(s.availableVersion), "b"], " se instala al jugar."]));
+        canUpdate = true;
+        break;
+      case "updateAvailable":
+        box.appendChild(line([["Hay versión nueva de ZombieBuddy: ", "warn"], [ver(s.installedVersion), "b"], " → ", [ver(s.availableVersion), "b"],
+          s.autoUpdate ? " (se instala al jugar)" : ""]));
+        canUpdate = true;
+        break;
+      case "upToDate":
+        box.appendChild(line([["✓ ", "ok"], "ZombieBuddy ", [ver(s.installedVersion), "b"], " al día."]));
+        break;
+      case "installedNoSource":
+        box.appendChild(line(["ZombieBuddy ", [ver(s.installedVersion), "b"], [" instalado, pero no está en tu Workshop para buscar versiones nuevas.", "warn"]]));
+        break;
+    }
+  }
+  box.appendChild(s.viewpointSubscribed
+    ? line([["✓ ", "ok"], "Viewpoint descargado de Workshop."])
+    : line([["Viewpoint no está descargado: suscribite en Workshop.", "bad"]]));
+
+  $("btn-vp-update").textContent = s.agent === "notInstalled" ? "Instalar ahora" : "Actualizar ahora";
+  $("btn-vp-update").classList.toggle("hidden", !canUpdate || !s.gameFound || s.installedExternally);
+  $("btn-vp-sub-zb").classList.toggle("hidden", !!s.zombieBuddySubscribed);
+  $("btn-vp-sub-vp").classList.toggle("hidden", !!s.viewpointSubscribed);
+}
+
+async function refreshViewpointButton() {
+  try {
+    const s = await App().GetViewpoint();
+    $("btn-viewpoint").classList.toggle("hidden", !s.supported);
+    $("vp-pill").classList.toggle("hidden", !s.enabled);
+  } catch (e) { /* opcional: si falla, simplemente no se muestra */ }
+}
+
+async function openViewpoint() {
+  try {
+    renderViewpoint(await App().GetViewpoint());
+    panel("panel-viewpoint");
+  } catch (e) {
+    toast(String(e), "err");
+  }
+}
+
+async function saveViewpoint() {
+  try {
+    const s = await App().SaveViewpoint($("vp-enabled").checked, $("vp-auto").checked);
+    renderViewpoint(s);
+    toast(s.enabled ? "Viewpoint activado: se aplica al Jugar." : "Viewpoint desactivado.", "ok");
+    refreshViewpointButton();
+    backToMenu();
+  } catch (e) {
+    toast(String(e), "err");
+  }
+}
+
+async function updateZombieBuddy() {
+  try {
+    renderViewpoint(await App().UpdateZombieBuddy());
+    toast("ZombieBuddy actualizado.", "ok");
+  } catch (e) {
+    toast(String(e), "err");
+  }
+}
+
 // --- Acciones del menú ---
 
 async function handleAction(act) {
@@ -162,6 +263,21 @@ async function handleAction(act) {
       break;
     case "save-settings":
       saveSettings();
+      break;
+    case "viewpoint":
+      openViewpoint();
+      break;
+    case "vp-save":
+      saveViewpoint();
+      break;
+    case "vp-update":
+      updateZombieBuddy();
+      break;
+    case "vp-sub-zb":
+      App().OpenWorkshop("zombiebuddy");
+      break;
+    case "vp-sub-vp":
+      App().OpenWorkshop("viewpoint");
       break;
     case "back":
       backToMenu();

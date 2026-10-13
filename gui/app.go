@@ -17,6 +17,7 @@ import (
 	"pzlauncher/internal/paths"
 	"pzlauncher/internal/selfupdate"
 	"pzlauncher/internal/updater"
+	"pzlauncher/internal/viewpoint"
 	"pzlauncher/internal/zomboid"
 )
 
@@ -209,6 +210,9 @@ func (a *App) Play() error {
 		return fmt.Errorf("No se encontró la carpeta del juego.")
 	}
 	a.applyGameOpts(gameDir, cfg)
+	if err := a.applyViewpoint(gameDir); err != nil {
+		return err
+	}
 	if err := gamelaunch.Launch(gameDir, m); err != nil {
 		return err
 	}
@@ -303,6 +307,117 @@ func (a *App) SaveSettings(chunkMs, heapMB, gridWidth int, towOff bool) (string,
 	a.cfg = cfg
 	a.mu.Unlock()
 	return perfSummary(cfg), nil
+}
+
+// --- Viewpoint (ver internal/viewpoint) ---
+
+// GetViewpoint devuelve el estado para el panel de Viewpoint.
+func (a *App) GetViewpoint() viewpoint.Status {
+	a.mu.Lock()
+	cfg, gameDir := a.cfg, a.gameDir
+	a.mu.Unlock()
+	if runtime.GOOS != "windows" {
+		return viewpoint.Status{} // zbNative.dll es solo Windows
+	}
+	return viewpoint.GetStatus(gameDir, cfg.Viewpoint, !cfg.ViewpointManualUpdates,
+		gameDir != "" && gameopts.HasAgent(gameDir) && !cfg.ViewpointAgentOwned)
+}
+
+// SaveViewpoint guarda los dos checks. Se aplican al Jugar (igual que los
+// ajustes de rendimiento), salvo apagarlo, que quita el agente ya mismo.
+func (a *App) SaveViewpoint(enabled, autoUpdate bool) (viewpoint.Status, error) {
+	a.mu.Lock()
+	a.cfg.Viewpoint = enabled
+	a.cfg.ViewpointManualUpdates = !autoUpdate
+	cfg, exeDir, gameDir := a.cfg, a.exeDir, a.gameDir
+	a.mu.Unlock()
+	if err := config.Save(exeDir, cfg); err != nil {
+		return a.GetViewpoint(), fmt.Errorf("No se pudo guardar la config: %w", err)
+	}
+	if !enabled && gameDir != "" {
+		if err := a.applyViewpoint(gameDir); err != nil {
+			return a.GetViewpoint(), err
+		}
+	}
+	return a.GetViewpoint(), nil
+}
+
+// UpdateZombieBuddy copia ya mismo la versión de Workshop a la carpeta del juego.
+func (a *App) UpdateZombieBuddy() (viewpoint.Status, error) {
+	a.mu.Lock()
+	gameDir := a.gameDir
+	a.mu.Unlock()
+	if gameDir == "" {
+		return a.GetViewpoint(), fmt.Errorf("No se encontró la carpeta del juego.")
+	}
+	if err := viewpoint.UpdateNow(gameDir); err != nil {
+		return a.GetViewpoint(), err
+	}
+	return a.GetViewpoint(), nil
+}
+
+// OpenWorkshop abre la página de Workshop de ZombieBuddy o de Viewpoint para
+// que el jugador se suscriba (el launcher nunca se suscribe por él).
+func (a *App) OpenWorkshop(which string) {
+	id := viewpoint.ViewpointWorkshopID
+	if which == "zombiebuddy" {
+		id = viewpoint.ZombieBuddyWorkshopID
+	}
+	wruntime.BrowserOpenURL(a.ctx, viewpoint.WorkshopURL(id))
+}
+
+// applyViewpoint deja el json del juego y los ficheros de ZombieBuddy según el
+// check: activado -> instala/actualiza ZombieBuddy y pone el agente; apagado ->
+// quita el agente si lo habíamos puesto nosotros. Si ZombieBuddy ya se carga
+// por fuera (Opciones de Steam o su instalador oficial) no tocamos nada.
+func (a *App) applyViewpoint(gameDir string) error {
+	if runtime.GOOS != "windows" {
+		return nil
+	}
+	a.mu.Lock()
+	cfg, exeDir := a.cfg, a.exeDir
+	a.mu.Unlock()
+	if _, err := os.Stat(gameopts.Path(gameDir)); err != nil {
+		if cfg.Viewpoint {
+			return fmt.Errorf("No encontré ProjectZomboid64.json en:\n%s", gameDir)
+		}
+		return nil
+	}
+
+	hasAgent := gameopts.HasAgent(gameDir)
+	owned := cfg.ViewpointAgentOwned
+	if cfg.Viewpoint {
+		if (hasAgent && !owned) || viewpoint.SteamOptionsLoadAgent() {
+			return nil // ya lo carga otro: no duplicar
+		}
+		if err := viewpoint.Ensure(gameDir, !cfg.ViewpointManualUpdates); err != nil {
+			return err
+		}
+		if !hasAgent {
+			if err := gameopts.SetAgent(gameDir, true); err != nil {
+				return fmt.Errorf("No se pudo activar ZombieBuddy: %w", err)
+			}
+		}
+		owned = true
+	} else if hasAgent && owned {
+		if err := gameopts.SetAgent(gameDir, false); err != nil {
+			return fmt.Errorf("No se pudo desactivar ZombieBuddy: %w", err)
+		}
+		owned = false
+	} else if !hasAgent {
+		owned = false // Steam reescribió el json (update / verificar integridad)
+	}
+
+	if owned != cfg.ViewpointAgentOwned {
+		a.mu.Lock()
+		a.cfg.ViewpointAgentOwned = owned
+		cfg = a.cfg
+		a.mu.Unlock()
+		if err := config.Save(exeDir, cfg); err != nil {
+			log.Printf("[aviso] no se pudo guardar la config: %v", err)
+		}
+	}
+	return nil
 }
 
 // --- Helpers (portados de cmd/launcher) ---

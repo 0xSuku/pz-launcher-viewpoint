@@ -43,6 +43,19 @@ them):
   (recommended); turn it off only to get vanilla behavior for a test. When left
   on, no flag is written (the jar's built-in default is on).
 
+**Viewpoint mod** (Windows): an optional menu entry to enable
+[Project Viewpoint](https://steamcommunity.com/sharedfiles/filedetails/?id=3809306528)
+(first/third person camera). Viewpoint is a Java mod that needs the
+[ZombieBuddy](https://github.com/zed-0xff/ZombieBuddy) loader
+([Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3619862853)).
+Subscribe to both; there is no need to run ZombieBuddy's installer. When enabled,
+on Play the launcher copies `zbNative.dll` + `ZombieBuddy.jar` from your Workshop
+download into the game folder (updating them when Steam gets a new version,
+unless you turn that off) and adds `-agentlib:zbNative` to `ProjectZomboid64.json`.
+Turning it off removes that line again (only if the launcher added it). Your Steam
+Launch Options are never touched. ZombieBuddy asks you once to approve the
+Viewpoint jar (and again whenever Viewpoint updates).
+
 Downloads are resilient to flaky connections: a stalled transfer is detected and
 automatically retried.
 
@@ -115,6 +128,19 @@ las pierde):
   un choque. **Activado por defecto** (recomendado); desactívalo solo para probar
   el comportamiento vanilla. Si se deja activado no se escribe ningún flag (el jar
   ya viene con el fix activado).
+
+**Mod Viewpoint** (Windows): una opción del menú para activar
+[Project Viewpoint](https://steamcommunity.com/sharedfiles/filedetails/?id=3809306528)
+(cámara en primera/tercera persona). Viewpoint es un mod Java que necesita el
+loader [ZombieBuddy](https://github.com/zed-0xff/ZombieBuddy)
+([Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3619862853)).
+Hay que suscribirse a los dos; no hace falta correr el instalador de ZombieBuddy.
+Activado, al Jugar el launcher copia `zbNative.dll` + `ZombieBuddy.jar` desde tu
+descarga de Workshop a la carpeta del juego (y los actualiza cuando Steam baja una
+versión nueva, salvo que lo desactives) y añade `-agentlib:zbNative` al
+`ProjectZomboid64.json`. Al desactivarlo se quita esa línea (solo si la puso el
+launcher). Nunca toca tus Opciones de lanzamiento de Steam. ZombieBuddy pide una
+vez aprobar el jar de Viewpoint (y de nuevo cuando Viewpoint se actualiza).
 
 Las descargas toleran conexiones inestables: si la transferencia se queda parada,
 se detecta y se reintenta automáticamente.

@@ -50,6 +50,10 @@
           <span class="btn-label">Ajustes de rendimiento</span>
           <span class="btn-sub">Anti-tirones, memoria y fix de remolque</span>
         </button>
+        <button class="btn hidden" data-act="viewpoint" id="btn-viewpoint">
+          <span class="btn-label">Mod Viewpoint <span class="pill hidden" id="vp-pill">activado</span></span>
+          <span class="btn-sub">Cámara en primera/tercera persona (vía ZombieBuddy)</span>
+        </button>
         <button class="btn" data-act="notes" id="btn-notes">
           <span class="btn-label">Novedades (parches)</span>
           <span class="btn-sub">Qué se ha arreglado últimamente</span>
@@ -108,6 +112,41 @@
         </label>
         <div class="form-actions">
           <button class="btn btn-play" data-act="save-settings">Guardar y aplicar</button>
+          <button class="btn" data-act="back">Cancelar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel: Viewpoint -->
+    <section id="panel-viewpoint" class="panel hidden">
+      <div class="panel-head">
+        <h2>Mod Viewpoint</h2>
+        <button class="x" data-act="back">✕</button>
+      </div>
+      <div class="form">
+        <label class="field field-check">
+          <input type="checkbox" id="vp-enabled" />
+          <span>
+            <span class="field-label">Activar mod Viewpoint</span>
+            <span class="field-help">Al jugar, instala ZombieBuddy (el loader de mods Java que necesita Viewpoint) desde tu Workshop y lo activa en el juego. Desmarcado, el juego arranca como siempre.</span>
+          </span>
+        </label>
+        <label class="field field-check">
+          <input type="checkbox" id="vp-auto" />
+          <span>
+            <span class="field-label">Actualizar ZombieBuddy automáticamente al jugar</span>
+            <span class="field-help">Cuando Steam baja una versión nueva de ZombieBuddy, la copia al juego antes de arrancar. Desmarcado, solo se actualiza con "Actualizar ahora".</span>
+          </span>
+        </label>
+        <div class="vp-status" id="vp-status"></div>
+        <div class="vp-links">
+          <button class="btn hidden" data-act="vp-update" id="btn-vp-update">Actualizar ahora</button>
+          <button class="btn hidden" data-act="vp-sub-zb" id="btn-vp-sub-zb">Suscribirse a ZombieBuddy</button>
+          <button class="btn hidden" data-act="vp-sub-vp" id="btn-vp-sub-vp">Suscribirse a Viewpoint</button>
+        </div>
+        <div class="field-help">La primera vez (y cada vez que Viewpoint se actualice) ZombieBuddy te va a pedir aprobar el mod en una ventana propia: decí que sí. Al entrar, arriba a la izquierda tiene que decir "ZombieBuddy … loaded".</div>
+        <div class="form-actions">
+          <button class="btn btn-play" data-act="vp-save">Guardar</button>
           <button class="btn" data-act="back">Cancelar</button>
         </div>
       </div>

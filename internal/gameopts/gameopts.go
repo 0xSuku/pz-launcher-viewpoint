@@ -127,6 +127,95 @@ func setVMArgs(args []string, chunkBudgetMs, maxHeapMB, maxChunkGridWidth int, s
 	return out
 }
 
+// AgentArg carga ZombieBuddy (el loader de mods Java que necesita Viewpoint) al
+// arrancar la JVM. zbNative.dll a su vez carga ZombieBuddy.jar; ambos tienen que
+// estar en la carpeta del juego (ver internal/viewpoint). Es la misma línea que
+// escribe el instalador oficial de ZombieBuddy.
+const AgentArg = "-agentlib:zbNative"
+
+// isAgentArg reconoce la línea del agente con o sin parámetros
+// ("-agentlib:zbNative=verbosity=1").
+func isAgentArg(a string) bool {
+	t := strings.TrimSpace(a)
+	return t == AgentArg || strings.HasPrefix(t, AgentArg+"=")
+}
+
+// HasAgent indica si el ProjectZomboid64.json ya carga ZombieBuddy.
+func HasAgent(gameDir string) bool {
+	root, err := readJSON(gameDir)
+	if err != nil {
+		return false
+	}
+	for _, a := range vmArgsOf(root) {
+		if isAgentArg(a) {
+			return true
+		}
+	}
+	return false
+}
+
+// SetAgent pone (al principio de vmArgs, como el instalador de ZombieBuddy) o
+// quita la línea del agente. Igual que Apply, preserva el resto del fichero.
+func SetAgent(gameDir string, on bool) error {
+	root, err := readJSON(gameDir)
+	if err != nil {
+		return err
+	}
+	args := setAgentArg(vmArgsOf(root), on)
+	out := make([]any, len(args))
+	for i, a := range args {
+		out[i] = a
+	}
+	root["vmArgs"] = out
+	buf, err := json.MarshalIndent(root, "", "\t")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(Path(gameDir), append(buf, '\n'), 0o644); err != nil {
+		return fmt.Errorf("escribiendo %s: %w", jsonName, err)
+	}
+	return nil
+}
+
+// setAgentArg devuelve args sin ninguna línea del agente y, si on, con una sola
+// al principio.
+func setAgentArg(args []string, on bool) []string {
+	out := make([]string, 0, len(args)+1)
+	if on {
+		out = append(out, AgentArg)
+	}
+	for _, a := range args {
+		if !isAgentArg(a) {
+			out = append(out, a)
+		}
+	}
+	return out
+}
+
+func readJSON(gameDir string) (map[string]any, error) {
+	data, err := os.ReadFile(Path(gameDir))
+	if err != nil {
+		return nil, fmt.Errorf("leyendo %s: %w", jsonName, err)
+	}
+	var root map[string]any
+	if err := json.Unmarshal(data, &root); err != nil {
+		return nil, fmt.Errorf("%s con formato inesperado: %w", jsonName, err)
+	}
+	return root, nil
+}
+
+func vmArgsOf(root map[string]any) []string {
+	var args []string
+	if raw, ok := root["vmArgs"].([]any); ok {
+		for _, v := range raw {
+			if s, ok := v.(string); ok {
+				args = append(args, s)
+			}
+		}
+	}
+	return args
+}
+
 // SuggestHeapMB sugiere un -Xmx (en MB) según la RAM física total, dejando
 // margen para el SO. Devuelve 0 si no se pudo detectar la RAM. El cliente de PZ
 // rara vez aprovecha más de 8 GB, así que ahí topamos.

@@ -47,6 +47,20 @@ type Config struct {
 	// Solo si el jugador lo pone en true escribimos "-Dpz.safeTowReconnect=false"
 	// para volver al comportamiento vanilla (diagnóstico).
 	SafeTowReconnectOff bool `json:"safe_tow_reconnect_off,omitempty"`
+
+	// Viewpoint activa el mod Project Viewpoint: al Jugar se instala ZombieBuddy
+	// en la carpeta del juego y se añade -agentlib:zbNative al json del juego
+	// (ver internal/viewpoint).
+	Viewpoint bool `json:"viewpoint,omitempty"`
+
+	// ViewpointManualUpdates desactiva la actualización automática de
+	// ZombieBuddy al Jugar. Al revés para que el valor-cero (false) = automática.
+	ViewpointManualUpdates bool `json:"viewpoint_manual_updates,omitempty"`
+
+	// ViewpointAgentOwned recuerda que la línea -agentlib:zbNative del json del
+	// juego la puso el launcher. Solo así la quitamos al desactivar Viewpoint: si
+	// la puso el instalador oficial de ZombieBuddy, no es nuestra.
+	ViewpointAgentOwned bool `json:"viewpoint_agent_owned,omitempty"`
 }
 
 func file(baseDir string) string {

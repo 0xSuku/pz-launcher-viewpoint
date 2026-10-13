@@ -14,8 +14,16 @@ export function GetState() {
   return window['go']['main']['App']['GetState']();
 }
 
+export function GetViewpoint() {
+  return window['go']['main']['App']['GetViewpoint']();
+}
+
 export function OpenLogs() {
   return window['go']['main']['App']['OpenLogs']();
+}
+
+export function OpenWorkshop(arg1) {
+  return window['go']['main']['App']['OpenWorkshop'](arg1);
 }
 
 export function Play() {
@@ -30,6 +38,14 @@ export function SaveSettings(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['SaveSettings'](arg1, arg2, arg3, arg4);
 }
 
+export function SaveViewpoint(arg1, arg2) {
+  return window['go']['main']['App']['SaveViewpoint'](arg1, arg2);
+}
+
 export function Start() {
   return window['go']['main']['App']['Start']();
+}
+
+export function UpdateZombieBuddy() {
+  return window['go']['main']['App']['UpdateZombieBuddy']();
 }

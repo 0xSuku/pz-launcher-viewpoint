@@ -120,3 +120,50 @@ func TestApplyPreservesOtherKeys(t *testing.T) {
 		t.Fatalf("se perdió un vmArg previo: %v", args)
 	}
 }
+
+func TestSetAgentArg(t *testing.T) {
+	base := []string{"-Djava.awt.headless=true", "-Xmx6144m"}
+
+	// on: una sola línea, al principio; el resto intacto y en orden.
+	got := setAgentArg(base, true)
+	if got[0] != AgentArg || countPrefix(got, AgentArg) != 1 || len(got) != 3 {
+		t.Fatalf("el agente no quedó único al principio: %v", got)
+	}
+	// Idempotente, y absorbe una variante con parámetros que estuviera más abajo.
+	got = setAgentArg(append(got, AgentArg+"=verbosity=1"), true)
+	if got[0] != AgentArg || countPrefix(got, AgentArg) != 1 {
+		t.Fatalf("se duplicó el agente: %v", got)
+	}
+	// off: lo quita y no toca nada más.
+	got = setAgentArg(got, false)
+	if countPrefix(got, AgentArg) != 0 || !contains(got, "-Xmx6144m") || len(got) != 2 {
+		t.Fatalf("off no quitó solo el agente: %v", got)
+	}
+}
+
+func TestSetAgentSurvivesApply(t *testing.T) {
+	dir := t.TempDir()
+	src := `{ "mainClass": "zombie/gameStates/MainScreenState", "vmArgs": ["-Dzomboid.steam=1"] }`
+	if err := os.WriteFile(filepath.Join(dir, jsonName), []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if HasAgent(dir) {
+		t.Fatal("un json vanilla no carga el agente")
+	}
+	if err := SetAgent(dir, true); err != nil {
+		t.Fatal(err)
+	}
+	// Los ajustes de rendimiento se reaplican en cada Jugar: no deben borrar el agente.
+	if err := Apply(dir, 4, 0, 0, false); err != nil {
+		t.Fatal(err)
+	}
+	if !HasAgent(dir) {
+		t.Fatal("Apply se llevó el agente")
+	}
+	if err := SetAgent(dir, false); err != nil {
+		t.Fatal(err)
+	}
+	if HasAgent(dir) {
+		t.Fatal("SetAgent(false) no quitó el agente")
+	}
+}
