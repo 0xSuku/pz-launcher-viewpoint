@@ -1,6 +1,81 @@
-# pzlauncher
+# pzlauncher + Viewpoint
 
-> 🇬🇧 English below · 🇪🇸 Español más abajo
+Es el launcher del servidor **Patagonia PZ**
+([original](https://github.com/patagoniapz/pz-launcher)) con un agregado: una
+opción para jugar con **[Project Viewpoint](https://steamcommunity.com/sharedfiles/filedetails/?id=3809306528)**,
+el mod de cámara en primera/tercera persona. Todo lo demás funciona igual que el
+launcher original.
+
+## Cómo usarlo
+
+1. En Steam Workshop suscribite a
+   **[ZombieBuddy](https://steamcommunity.com/sharedfiles/filedetails/?id=3619862853)**
+   y a **[Viewpoint](https://steamcommunity.com/sharedfiles/filedetails/?id=3809306528)**,
+   y esperá a que Steam los descargue. No hace falta instalar nada más.
+2. Bajá `pzlauncher-windows-amd64-gui.exe` desde
+   [Releases](../../releases/latest) y abrilo.
+3. Entrá a **Mod Viewpoint**, tildá **Activar mod Viewpoint**, **Guardar** y
+   **Jugar**.
+4. La primera vez, ZombieBuddy te pide aprobar el mod en una ventana: decí que
+   **sí**. Si arriba a la izquierda del menú dice **"ZombieBuddy … loaded"**, está
+   funcionando. Dentro del juego, la tecla **Supr** abre los ajustes de Viewpoint.
+
+Para dejar de usarlo, destildá la opción y dale **Guardar**: el juego vuelve a
+arrancar como siempre. El launcher nunca toca tus partidas ni tus opciones de
+Steam.
+
+## Cómo comprobar que el archivo es el original
+
+Un `.exe` puede ser modificado por cualquiera que lo vuelva a subir a otro lado.
+Estas dos pruebas te aseguran que el tuyo es exactamente el que compiló GitHub a
+partir del código de este repositorio.
+
+**1. Compará la huella (lo más fácil).** Cada archivo tiene una "huella" (hash
+SHA-256): un código de 64 letras y números que cambia por completo si se toca un
+solo byte del archivo.
+
+- Abrí la carpeta donde descargaste el `.exe`, hacé clic derecho en un espacio
+  vacío y elegí **Abrir en Terminal** (o "Abrir ventana de PowerShell aquí").
+- Escribí esto y apretá Enter:
+
+  ```powershell
+  Get-FileHash .\pzlauncher-windows-amd64-gui.exe
+  ```
+
+- Compará lo que sale en **Hash** con el que figura en la página del
+  [release](../../releases/latest) (y en su archivo `SHA256SUMS.txt`). Tienen que
+  ser **idénticos**; que estén en mayúsculas o minúsculas da igual. Si difiere en
+  algo, **no lo abras**.
+
+**2. Verificá que lo compiló GitHub (opcional).** Cada release lleva una
+atestación firmada por GitHub que dice de qué repositorio y de qué commit salió
+el archivo. Se ve en [Attestations](../../attestations), o con
+[GitHub CLI](https://cli.github.com/):
+
+```powershell
+gh attestation verify .\pzlauncher-windows-amd64-gui.exe --repo 0xSuku/pz-launcher-viewpoint
+```
+
+Si dice `Verification succeeded`, el archivo salió de este repositorio, compilado
+por GitHub y no por una persona.
+
+Windows puede mostrar "Windows protegió su PC" porque el `.exe` no está firmado
+con un certificado comercial. Si la huella coincide, es seguro: **Más
+información → Ejecutar de todas formas**.
+
+## Para publicar una versión nueva
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\release.ps1
+```
+
+Crea el tag siguiente (sube el último número: `v0.2.12`, `v0.2.13`, …) y GitHub Actions compila,
+calcula las huellas, firma la atestación y publica el release solo. Para traer
+cambios del launcher original: `git pull upstream main` antes de publicar.
+
+---
+
+> 🇬🇧 English below · 🇪🇸 Español más abajo (documentación del launcher original)
 
 ---
 

@@ -97,4 +97,5 @@ if (-not $?) { git tag -d $tag *> $null; Die "fallo el push del tag (revertido e
 
 Write-Host ""
 Write-Host "LISTO. Tag $tag publicado -> el CI compila y publica el release." -ForegroundColor Green
-Write-Host "Seguimiento: https://github.com/patagoniapz/pz-launcher/actions" -ForegroundColor Gray
+$repoUrl = ((git remote get-url origin).Trim() -replace '^git@github\.com:', 'https://github.com/') -replace '\.git$', ''
+Write-Host "Seguimiento: $repoUrl/actions" -ForegroundColor Gray

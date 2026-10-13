@@ -18,6 +18,10 @@ on:
 
 permissions:
   contents: write
+  # Para la atestación de procedencia (ver job release): GitHub firma que cada
+  # binario salió de este workflow, en este repo y en este commit.
+  id-token: write
+  attestations: write
 
 jobs:
   vars:
@@ -149,10 +153,57 @@ jobs:
             -out dist/manifest.json
           cat dist/manifest.json
 
+      - name: Calcular huellas SHA-256
+        working-directory: dist
+        run: |
+          # SHA256SUMS.txt: una línea "<hash>  <fichero>" por cada fichero publicado.
+          ls pzlauncher-* manifest.json projectzomboid.jar 2>/dev/null | xargs sha256sum > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Atestación de procedencia (firmada por GitHub)
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/pzlauncher-*
+            dist/manifest.json
+            dist/projectzomboid.jar
+
+      - name: Texto del release
+        env:
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          {
+            echo "Compilado automáticamente por GitHub Actions desde el commit \`${SHA}\`."
+            echo ""
+            echo "**Windows:** descargá \`pzlauncher-windows-amd64-gui.exe\`."
+            echo ""
+            echo "### Comprobar que el archivo es el original"
+            echo ""
+            echo "En PowerShell, en la carpeta donde lo descargaste:"
+            echo ""
+            echo '```powershell'
+            echo 'Get-FileHash .\pzlauncher-windows-amd64-gui.exe'
+            echo '```'
+            echo ""
+            echo "El valor de **Hash** tiene que ser **exactamente igual** al de esta lista (mayúsculas o minúsculas da igual):"
+            echo ""
+            echo '```'
+            cat dist/SHA256SUMS.txt
+            echo '```'
+            echo ""
+            echo "Prueba de que lo compiló GitHub (no una persona): https://github.com/${REPO}/attestations"
+            echo "o con GitHub CLI: \`gh attestation verify pzlauncher-windows-amd64-gui.exe --repo ${REPO}\`"
+          } > dist/RELEASE_NOTES.md
+          cat dist/RELEASE_NOTES.md
+
       - name: Publicar release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: dist/RELEASE_NOTES.md
           files: |
+            dist/SHA256SUMS.txt
             dist/pzlauncher-windows-amd64-gui.exe
             dist/pzlauncher-linux-amd64
             dist/pzlauncher-darwin-amd64
